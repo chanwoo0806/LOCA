@@ -90,7 +90,7 @@ class MultVAE(BaseRecommender):
         else:
             return output
 
-    def train_model(self, dataset, evaluator, early_stop, logger, config):
+    def train_model(self, dataset, evaluator, early_stop, logger, config, writer):
         exp_config = config['Experiment']
 
         num_epochs = exp_config['num_epochs']
@@ -133,6 +133,8 @@ class MultVAE(BaseRecommender):
             epoch_train_time = time() - epoch_train_start
 
             epoch_info = ['epoch=%3d' % epoch, 'loss=%.3f' % epoch_loss, 'train time=%.2f' % epoch_train_time]
+            if writer:
+                writer.add_scalar('Loss', epoch_loss, epoch)
 
             # ======================== Evaluate
             if (epoch >= test_from and epoch % test_step == 0) or epoch == num_epochs:
@@ -142,6 +144,9 @@ class MultVAE(BaseRecommender):
 
                 test_score = evaluator.evaluate(self)
                 test_score_str = ['%s=%.4f' % (k, test_score[k]) for k in test_score]
+                if writer:
+                    for k in test_score:
+                        writer.add_scalar('TEST/'+k, test_score[k], epoch)
 
                 updated, should_stop = early_stop.step(test_score, epoch)
 

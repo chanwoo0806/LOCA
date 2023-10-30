@@ -15,6 +15,9 @@ from evaluation import Evaluator
 
 import warnings
 
+from tensorboardX import SummaryWriter
+import time
+
 warnings.filterwarnings("ignore")
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
@@ -66,6 +69,14 @@ if __name__ == '__main__':
     # Save log & dataset config.
     logger.info(config)
     logger.info(dataset)
+    
+    # tensorboard
+    if config.get_param('Experiment','tensorboard'):
+        root_path = os.path.dirname(os.path.dirname(__file__))
+        writer_path = os.path.join(root_path, 'runs/') + str(time.strftime("%m-%d-%Hh%Mm%Ss"))
+        writer = SummaryWriter(writer_path)
+    else:
+        writer = None
 
     import model
     MODEL_CLASS = getattr(model, model_name)
@@ -78,7 +89,7 @@ if __name__ == '__main__':
     model = MODEL_CLASS(dataset, config['Model'], device)
 
     # train
-    test_score, train_time = train_model(model, dataset, test_evaluator, early_stop, logger, config)
+    test_score, train_time = train_model(model, dataset, test_evaluator, early_stop, logger, config, writer)
 
     m, s = divmod(train_time, 60)
     h, m = divmod(m, 60)
@@ -117,3 +128,6 @@ if __name__ == '__main__':
             pickle.dump(user_embedding, f, protocol=4)
         config.save(emb_dir)
         print(f"{model_name} embedding extracted!")
+        
+    if config.get_param('Experiment','tensorboard'):
+        writer.close()
