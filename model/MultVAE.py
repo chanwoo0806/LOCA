@@ -42,6 +42,7 @@ class MultVAE(BaseRecommender):
         self.best_params = None
 
         self.build_graph()
+        self.weight_new_loss = model_conf['weight_new_loss']
 
     def build_graph(self):
         self.encoder = nn.ModuleList()
@@ -187,7 +188,7 @@ class MultVAE(BaseRecommender):
             num_iter = batch_matrix.sum(1)
             max_num_inter = num_iter.max()
             new_loss = (max_num_inter - num_iter).reshape(-1,1) * F.softmax(output, 1)
-            ce_loss = -(F.log_softmax(output, 1) * (batch_matrix+new_loss)).sum(1).mean()
+            ce_loss = -(F.log_softmax(output, 1) * (batch_matrix + self.weight_new_loss * new_loss)).sum(1).mean()
         else:
             ce_loss = -((F.log_softmax(output, 1) * batch_matrix) * batch_weight.view(output.shape[0], -1)).sum(1).mean()
 
